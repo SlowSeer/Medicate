@@ -22,7 +22,7 @@ local myUserSettings =
 	--General Settings
 	"setStyle",
 	"setBatteryStyle",
-	
+	"setLock",
 	"setShowFocusNumber",
 	"setFocusNumberColor",
 	"setFocusBarColor",
@@ -46,7 +46,6 @@ end
 
 function Medicate:OnLoad()
 	Apollo.RegisterSlashCommand("Medicate", "SlashMedicate", self)
-	Apollo.RegisterSlashCommand("medicate", "SlashMedicate", self)
 
 	Apollo.RegisterEventHandler("CharacterCreated", "OnCharacterCreated", self)
 		
@@ -64,7 +63,7 @@ function Medicate:OnLoad()
 	self.setShowFocusNumber = true;
 	self.setFocusNumberColor = "FFFFFF";
 	self.setFocusBarColor = "FFFFFF";
-	
+	self.setLock = true;
 	self.setPosition = nil;
 end
 
@@ -211,6 +210,8 @@ function Medicate:SettingsChanged()
 	self.wndMain:FindChild("ManaProgressText"):Show(self.setShowFocusNumber)
 	self.wndMain:FindChild("ManaProgressText"):SetTextColor(ApolloColor.new("FF" .. self.setFocusNumberColor))
 	self.wndMain:FindChild("ManaProgressBar"):SetBarColor(ApolloColor.new("FF" .. self.setFocusBarColor))
+
+	self.wndMain:SetStyle("Moveable", not self.setLock)
 	
 	self.restored = true;
 end
@@ -240,6 +241,7 @@ function Medicate:RefreshSettings()
 		self.wndSettingsForm:FindChild("Edit_FocusBarColor"):SetText(self.setFocusBarColor)
 		self.wndSettingsForm:FindChild("Label_FocusBarColor"):SetTextColor(ApolloColor.new("FF" .. self.setFocusBarColor)) end
 		
+		self.wndSettingsForm:FindChild("Button_Lock"):SetCheck(self.setLock)
 end
 
 
@@ -420,6 +422,10 @@ function Medicate:Edit_FocusBarColor()
 	if string.len(colorString) > 6 then self.wndSettingsForm:FindChild("Edit_FocusBarColor"):SetText(string.sub(colorString, 0, 6)) end	
 	self.wndSettingsForm:FindChild("Label_FocusBarColor"):SetTextColor(ApolloColor.new("FF"..colorString));
 	self.setFocusBarColor = colorString; self:SettingsChanged();
+end
+
+function Medicate:Button_Lock( wndHandler, wndControl, eMouseButton )
+	self.setLock = wndControl:IsChecked(); self:SettingsChanged();
 end
 
 -----------------------------------------------------------------------------------------------
