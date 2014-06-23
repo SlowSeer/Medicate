@@ -45,7 +45,7 @@ function Medicate:Init()
 end
 
 function Medicate:OnLoad()
-	Apollo.RegisterSlashCommand("Medicate", "SlashMedicate", self)
+	Apollo.RegisterSlashCommand("medicate", "SlashMedicate", self)
 
 	Apollo.RegisterEventHandler("CharacterCreated", "OnCharacterCreated", self)
 		
