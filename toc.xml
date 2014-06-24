@@ -1,4 +1,4 @@
-<Addon Name="Medicate" APIVersion="8" Author="Nasq" Version="1.1" Description="Medic Resource UI">
+<Addon Name="Medicate" APIVersion="8" Author="Nasq" Version="1.2" Description="Medic Resource UI">
     <Script Name="Medicate.lua"/>
     <Form Name="Medicate.xml"/>
     <ReplaceAddon Name="Medic"/>
