@@ -11,11 +11,10 @@ require "Spell"
 
 local mainWindow = ""
 local strResource = ""
-local restored = false
+
 local batteryStyle = "_matte"
 
-local posX = 0
-local posY = 0
+local restored = false
 
 local myUserSettings = 
 {
@@ -30,8 +29,8 @@ local myUserSettings =
 	"setPosX"
 }
 
-
 local Medicate = {}
+
 
 function Medicate:new(o)
     o = o or {}
@@ -40,109 +39,128 @@ function Medicate:new(o)
     return o
 end
 
+
 function Medicate:Init()
-    Apollo.RegisterAddon(self)
+    Apollo.RegisterAddon(self, true, "Medicate", nil)
 end
 
-function Medicate:OnLoad()
-	Apollo.RegisterSlashCommand("medicate", "SlashMedicate", self)
 
-	Apollo.RegisterEventHandler("CharacterCreated", "OnCharacterCreated", self)
-		
-	if GameLib.GetPlayerUnit() then
-		self:OnCharacterCreated()
-	end
+function Medicate:OnLoad()
+	-- Wait for xml to load
+	self.xmlDoc = XmlDoc.CreateFromFile("Medicate.xml")
+	self.xmlDoc:RegisterCallback("OnDocumentReady", self)
 	
+	-- Register /medicate
+	Apollo.RegisterSlashCommand("medicate", "SlashMedicate", self)
+			
 	-- Default Settings
-	self.restored = false;
-	
-	-- Default User Settings
+	self:SetDefaults();
+end
+
+
+function Medicate:SetDefaults()		
 	self.setStyle = 2; -- default style
 	self.setBatteryStyle = 1;
 	
 	self.setShowFocusNumber = true;
 	self.setFocusNumberColor = "FFFFFF";
 	self.setFocusBarColor = "FFFFFF";
-	self.setLock = true;
-	self.setPosition = nil;
+	self.setLock = false; -- false on initial load so it can be moved then locked.
 end
+
 
 function Medicate:OnSave(eType)
 	if eType ~= GameLib.CodeEnumAddonSaveLevel.Character then return end
 
 	local tSave = {}
 	for idx,property in ipairs(myUserSettings) do tSave[property] = self[property] end
-	
-	--tSave["Position"] = { }
-	--tSave["Position"][1], saveData["Position"][2], _,_ = self.wndMain:GetAnchorOffsets()
 
 	return tSave
 end
 
--- Restore Saved User Settings
+
 function Medicate:OnRestore(eType, t)
-	if eType ~= GameLib.CodeEnumAddonSaveLevel.Character then return end
-	
 	for idx,property in ipairs(myUserSettings) do
 		if t[property] ~= nil then self[property] = t[property] end
-	end
-	
-	--if tData["Position"] ~= nil then
-	--	posX = tData["Position"][1];
-	--	posY = tData["Position"][2];
-	--end
+	end	
 end
+
+
+function Medicate:OnDocumentReady()
+	if self.xmlDoc == nil then return end
+	
+	self.documentLoaded = true
+	self:OnRequiredFlagsChanged()
+end
+
+
+function Medicate:OnRequiredFlagsChanged()
+	if self.documentLoaded == true then
+		if GameLib.GetPlayerUnit() then
+			self:OnCharacterCreated()
+		else
+			Apollo.RegisterEventHandler("CharacterCreated", "OnCharacterCreated", self)
+		end
+	end
+end
+
 
 function Medicate:OnCharacterCreated()
 	local unitPlayer = GameLib.GetPlayerUnit()
 	
-	if not unitPlayer then
-		return
-	elseif unitPlayer:GetClassId() ~= GameLib.CodeEnumClass.Medic then
-		if self.wndMain then
-			self.wndMain:Destroy()
-		end
+	-- Make sure we have a player and the player is a medic.
+	if not unitPlayer or unitPlayer:GetClassId() ~= GameLib.CodeEnumClass.Medic then
+		if self.wndMain then self.wndMain:Destroy() end
 		return
 	end
 	
 	Apollo.RegisterEventHandler("VarChange_FrameCount", "OnFrame", self)
-
-	self.xmlDoc = XmlDoc.CreateFromFile("Medicate.xml")
 	
-    self.wndMain = Apollo.LoadForm(self.xmlDoc, "MedicResourceForm", g_wndActionBarResources, self)
+    self.wndMain = Apollo.LoadForm(self.xmlDoc, "MedicResourceForm", nil, self)
+	self.wndMain:ToFront()
     self.wndMain:Show(false)
+
+	-- keep rReference to the main window.
 	mainWindow = self.wndMain
-	
-	
+
 	self.wndSettingsForm = Apollo.LoadForm(self.xmlDoc, "SettingsForm", nil, self)
 	self.wndSettingsMain = Apollo.LoadForm(self.xmlDoc, "SettingsMain", self.wndSettingsForm:FindChild("SettingsContainer"), self)
 	self.wndSettingsForm:Show(false)
-	
-	strResource = string.format("<T Font=\"CRB_InterfaceSmall\">%s</T>", Apollo.GetString("CRB_MedicResource"))
 
 	-- Load Styles
 	Medicate:LoadStyle1()
 	Medicate:LoadStyle2()
 
 	--self:SettingsChanged()
+	
+	-- Set Bind Point
+	local nLeft, nTop, nRight, nBottom = self.wndMain:GetRect()
+	Apollo.SetGlobalAnchor("CastingBarBottom", 0.0, nTop - 15, true)
+	
 end
 
+
+-- On Each Frame
 function Medicate:OnFrame()
+
 	-- First frame set-up, used because OnRestore is a bit iffy.
-	if self.restored == false then 
+	if restored == false then 
 		self:RefreshSettings()
 		self:SettingsChanged() -- Sets restored to true.
 		
 		-- restore position
-		if self.setPosX ~= nil and self.setPosY ~=nil then
+		if self.setPosX ~= nil and self.setPosY ~= nil then
 			self.wndMain:SetAnchorOffsets(
-					self.setPosX , self.setPosY , 
-					self.setPosX + self.wndMain:GetWidth(), self.setPosY + self.wndMain:GetHeight())
+				self.setPosX , 
+				self.setPosY , 
+				self.setPosX + self.wndMain:GetWidth(), 
+				self.setPosY + self.wndMain:GetHeight())
 		end
-		
 	end
-
+		
+	
 	local unitPlayer = GameLib.GetPlayerUnit()
+	
 	if not unitPlayer then
 		return
 	elseif unitPlayer:GetClassId() ~= GameLib.CodeEnumClass.Medic then
@@ -160,9 +178,6 @@ function Medicate:OnFrame()
 		self.wndMain:Show(true)
 	end
 
-	local nLeft, nTop, nRight, nBottom = self.wndMain:GetRect() -- legacy code
-	Apollo.SetGlobalAnchor("CastingBarBottom", 0.0, nTop - 15, true)
-
 	if self.setStyle == 1 then
 		self:DrawStyle1(unitPlayer) -- Style 1: Battery Pack
 	else
@@ -170,22 +185,24 @@ function Medicate:OnFrame()
 	end
 
 	
-	-- Resource 2 (Mana)
-	local nManaMax = unitPlayer:GetMaxMana()
-	local nManaCurrent = unitPlayer:GetMana()
-	self.wndMain:FindChild("ManaProgressBar"):SetMax(nManaMax)
-	self.wndMain:FindChild("ManaProgressBar"):SetProgress(nManaCurrent)
+	-- Resource 2 (Focus)
+	local nFocusMax = unitPlayer:GetMaxFocus()
+	local nFocusCurrent = unitPlayer:GetFocus()
+	self.wndMain:FindChild("ManaProgressBar"):SetMax(nFocusMax)
+	self.wndMain:FindChild("ManaProgressBar"):SetProgress(nFocusCurrent)
 	if nManaCurrent == nManaMax then
-		self.wndMain:FindChild("ManaProgressText"):SetText(nManaMax)
+		self.wndMain:FindChild("ManaProgressText"):SetText(nFocusMax)
 	else
 		--self.wndMain:FindChild("ManaProgressText"):SetText(string.format("%.02f/%s", nManaCurrent, nManaMax))
-		self.wndMain:FindChild("ManaProgressText"):SetText(String_GetWeaselString(Apollo.GetString("Achievements_ProgressBarProgress"), math.floor(nManaCurrent), nManaMax))	
+		self.wndMain:FindChild("ManaProgressText"):SetText(String_GetWeaselString(Apollo.GetString("Achievements_ProgressBarProgress"), math.floor(nFocusCurrent), nFocusMax))	
 	end
 
-	local strMana = String_GetWeaselString(Apollo.GetString("Medic_FocusTooltip"), nManaCurrent, nManaMax)
-	self.wndMain:FindChild("ManaProgressBar"):SetTooltip(string.format("<T Font=\"CRB_InterfaceSmall\">%s</T>", strMana))
+	local strFocus = String_GetWeaselString(Apollo.GetString("Medic_FocusTooltip"), nFocusCurrent, nFocusMax)
+	self.wndMain:FindChild("ManaProgressBar"):SetTooltip(string.format("<T Font=\"CRB_InterfaceSmall\">%s</T>", strFocus))
 end
 
+
+-- Settings have changed! Update the addon with the new settings.
 -- Show/Hide the correct styles
 function Medicate:SettingsChanged()
 	-- Hide all styles
@@ -212,11 +229,13 @@ function Medicate:SettingsChanged()
 	self.wndMain:FindChild("ManaProgressBar"):SetBarColor(ApolloColor.new("FF" .. self.setFocusBarColor))
 
 	self.wndMain:SetStyle("Moveable", not self.setLock)
+	self.wndMain:SetStyle("IgnoreMouse", self.setLock)
 	
-	self.restored = true;
+	restored = true;
 end
 
--- Set-up the settings form on first frame.
+
+-- Set-up the settings form on first frame to mirror the saved settings.
 function Medicate:RefreshSettings()
 	if self.setStyle == 1 then
 		self.wndSettingsForm:FindChild("Button_Battery"):SetCheck(true)
@@ -256,9 +275,16 @@ function Medicate:EnableBatteryStyle(enabled)
 	end
 end
 
+
+function Medicate:OnConfigure()
+	self:SlashMedicate()
+end
+
+
 function Medicate:SlashMedicate()
 	self.wndSettingsForm:Show(true)
 end
+
 
 -----------------------------------------------------------------------------------------------
 -- STYLE 1
@@ -306,6 +332,7 @@ function Medicate:DrawStyle1(unitPlayer)
 		end
 	end	
 end
+
 
 -----------------------------------------------------------------------------------------------
 -- STYLE 2
@@ -358,8 +385,6 @@ function Medicate:DrawStyle2(unitPlayer)
 		end
 	end	
 end
-
-
 
 
 ---------------------------------------------------------------------------------------------------

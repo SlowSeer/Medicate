@@ -1,5 +1,5 @@
-<Addon Name="Medicate" APIVersion="8" Author="Nasq" Version="1.2" Description="Medic Resource UI">
+<Addon Name="Medicate" APIVersion="11" Author="Nasq" Version="1.3" Description="Medic Resource UI">
     <Script Name="Medicate.lua"/>
     <Form Name="Medicate.xml"/>
-    <ReplaceAddon Name="Medic"/>
+    <ReplaceAddon Name="ClassResources"/>
 </Addon>
