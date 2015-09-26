@@ -22,6 +22,7 @@ local myUserSettings =
 	"setStyle",
 	"setBatteryStyle",
 	"setLock",
+	"setShowIncrements",
 	"setShowFocusNumber",
 	"setFocusNumberColor",
 	"setFocusBarColor",
@@ -66,6 +67,7 @@ function Medicate:SetDefaults()
 	self.setFocusNumberColor = "FFFFFF";
 	self.setFocusBarColor = "FFFFFF";
 	self.setLock = false; -- false on initial load so it can be moved then locked.
+	self.setShowIncrements = true;
 end
 
 
@@ -254,13 +256,17 @@ function Medicate:RefreshSettings()
 	
 	if self.setFocusNumberColor ~= nil then 
 		self.wndSettingsForm:FindChild("Edit_FocusNumberColor"):SetText(self.setFocusNumberColor)
-		self.wndSettingsForm:FindChild("Label_FocusNumberColor"):SetTextColor(ApolloColor.new("FF" .. self.setFocusNumberColor)) end
+		self.wndSettingsForm:FindChild("Label_FocusNumberColor"):SetTextColor(ApolloColor.new("FF" .. self.setFocusNumberColor)) 
+	end
 		
 	if self.setFocusBarColor ~= nil then 
 		self.wndSettingsForm:FindChild("Edit_FocusBarColor"):SetText(self.setFocusBarColor)
-		self.wndSettingsForm:FindChild("Label_FocusBarColor"):SetTextColor(ApolloColor.new("FF" .. self.setFocusBarColor)) end
+		self.wndSettingsForm:FindChild("Label_FocusBarColor"):SetTextColor(ApolloColor.new("FF" .. self.setFocusBarColor)) 
+	end
 		
-		self.wndSettingsForm:FindChild("Button_Lock"):SetCheck(self.setLock)
+	self.wndSettingsForm:FindChild("Button_Lock"):SetCheck(self.setLock)
+	
+	self.wndSettingsForm:FindChild("Button_ShowIncrements"):SetCheck(self.setShowIncrements)
 end
 
 
@@ -324,7 +330,7 @@ function Medicate:DrawStyle1(unitPlayer)
 		if idx <= nResourceCurr then
 			myCores[idx].wnd:SetSprite("Battery_3" .. batteryStyle)
 		else
-			if idx == nResourceCurr + 1 then
+			if idx == nResourceCurr + 1 and self.setShowIncrements == true then
 				myCores[idx].wnd:SetSprite("Battery_" .. buffCount .. batteryStyle)
 			else
 				myCores[idx].wnd:SetSprite("Battery_0" .. batteryStyle)
@@ -377,7 +383,7 @@ function Medicate:DrawStyle2(unitPlayer)
 		else
 			myCores[idx].wnd:FindChild("On"):Show(false)
 			
-			if idx == nResourceCurr + 1 then
+			if idx == nResourceCurr + 1 and self.setShowIncrements == true then
 				myCores[idx].wnd:FindChild("ChargeBar"):SetProgress(buffCount*10, 50)
 			else
 				myCores[idx].wnd:FindChild("ChargeBar"):SetProgress(0, 90)
@@ -451,6 +457,10 @@ end
 
 function Medicate:Button_Lock( wndHandler, wndControl, eMouseButton )
 	self.setLock = wndControl:IsChecked(); self:SettingsChanged();
+end
+
+function Medicate:Button_ShowIncrements( wndHandler, wndControl, eMouseButton )
+	self.setShowIncrements = wndControl:IsChecked(); self:SettingsChanged();
 end
 
 -----------------------------------------------------------------------------------------------
