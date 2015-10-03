@@ -23,11 +23,13 @@ local myUserSettings =
 	"setBatteryStyle",
 	"setLock",
 	"setShowIncrements",
+	"setShowFocusBar",
 	"setShowFocusNumber",
 	"setFocusNumberColor",
 	"setFocusBarColor",
 	"setPosY",
-	"setPosX"
+	"setPosX",
+	"setHideThisForever"
 }
 
 local Medicate = {}
@@ -63,11 +65,13 @@ function Medicate:SetDefaults()
 	self.setStyle = 2; -- default style
 	self.setBatteryStyle = 1;
 	
+	self.setShowFocusBar = true;
 	self.setShowFocusNumber = true;
 	self.setFocusNumberColor = "FFFFFF";
 	self.setFocusBarColor = "FFFFFF";
 	self.setLock = false; -- false on initial load so it can be moved then locked.
 	self.setShowIncrements = true;
+	self.setHideThisForever = false;
 end
 
 
@@ -112,7 +116,11 @@ function Medicate:OnCharacterCreated()
 	
 	-- Make sure we have a player and the player is a medic.
 	if not unitPlayer or unitPlayer:GetClassId() ~= GameLib.CodeEnumClass.Medic then
-		if self.wndMain then self.wndMain:Destroy() end
+		if self.setHideThisForever == false then
+			self.wndMain = Apollo.LoadForm(self.xmlDoc, "NotAMedicResourceForm", nil, self)
+			self.wndMain:ToFront()
+		    self.wndMain:Show(true)
+		end
 		return
 	end
 	
@@ -159,16 +167,10 @@ function Medicate:OnFrame()
 				self.setPosY + self.wndMain:GetHeight())
 		end
 	end
-		
 	
+	-- Sanity check.
 	local unitPlayer = GameLib.GetPlayerUnit()
-	
-	if not unitPlayer then
-		return
-	elseif unitPlayer:GetClassId() ~= GameLib.CodeEnumClass.Medic then
-		if self.wndMain then
-			self.wndMain:Destroy()
-		end
+	if not unitPlayer or unitPlayer:GetClassId() ~= GameLib.CodeEnumClass.Medic then
 		return
 	end
 
@@ -226,6 +228,8 @@ function Medicate:SettingsChanged()
 		batteryStyle = "_matte";
 	end
 	
+	
+	self.wndMain:FindChild("FocusBar"):Show(self.setShowFocusBar)
 	self.wndMain:FindChild("ManaProgressText"):Show(self.setShowFocusNumber)
 	self.wndMain:FindChild("ManaProgressText"):SetTextColor(ApolloColor.new("FF" .. self.setFocusNumberColor))
 	self.wndMain:FindChild("ManaProgressBar"):SetBarColor(ApolloColor.new("FF" .. self.setFocusBarColor))
@@ -245,12 +249,13 @@ function Medicate:RefreshSettings()
 		self.wndSettingsForm:FindChild("Button_Eldan"):SetCheck(true)
 	end
 
-	
 	if self.setBatteryStyle == 1 then
 		self.wndSettingsForm:FindChild("Button_Battery_Gloss"):SetCheck(true)
 	else
 		self.wndSettingsForm:FindChild("Button_Battery_Matte"):SetCheck(true)
 	end
+	
+	self.wndSettingsForm:FindChild("Button_ShowFocusBar"):SetCheck(self.setShowFocusBar)
 	
 	self.wndSettingsForm:FindChild("Button_ShowFocusNumber"):SetCheck(self.setShowFocusNumber)
 	
@@ -437,6 +442,10 @@ end
 
 -- FOCUS BAR SETTINGS
 
+function Medicate:Button_ShowFocusBar( wndHandler, wndControl, eMouseButton )
+	self.setShowFocusBar = wndControl:IsChecked(); self:SettingsChanged();
+end
+
 function Medicate:Button_ShowFocusNumber( wndHandler, wndControl, eMouseButton )
 	self.setShowFocusNumber = wndControl:IsChecked(); self:SettingsChanged();
 end
@@ -461,6 +470,13 @@ end
 
 function Medicate:Button_ShowIncrements( wndHandler, wndControl, eMouseButton )
 	self.setShowIncrements = wndControl:IsChecked(); self:SettingsChanged();
+end
+
+-- Not a medic
+
+function Medicate:Button_HideThisForever( wndHandler, wndControl, eMouseButton )
+	self.setHideThisForever = true;
+	if self.wndMain then self.wndMain:Destroy() end
 end
 
 -----------------------------------------------------------------------------------------------
