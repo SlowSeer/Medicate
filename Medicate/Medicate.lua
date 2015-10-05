@@ -194,12 +194,8 @@ function Medicate:OnFrame()
 	local nFocusCurrent = unitPlayer:GetFocus()
 	self.wndMain:FindChild("ManaProgressBar"):SetMax(nFocusMax)
 	self.wndMain:FindChild("ManaProgressBar"):SetProgress(nFocusCurrent)
-	if nManaCurrent == nManaMax then
-		self.wndMain:FindChild("ManaProgressText"):SetText(nFocusMax)
-	else
-		--self.wndMain:FindChild("ManaProgressText"):SetText(string.format("%.02f/%s", nManaCurrent, nManaMax))
-		self.wndMain:FindChild("ManaProgressText"):SetText(String_GetWeaselString(Apollo.GetString("Achievements_ProgressBarProgress"), math.floor(nFocusCurrent), nFocusMax))	
-	end
+  self.wndMain:FindChild("ManaProgressText"):SetText(math.floor(nFocusCurrent))
+
 
 	local strFocus = String_GetWeaselString(Apollo.GetString("Medic_FocusTooltip"), nFocusCurrent, nFocusMax)
 	self.wndMain:FindChild("ManaProgressBar"):SetTooltip(string.format("<T Font=\"CRB_InterfaceSmall\">%s</T>", strFocus))
