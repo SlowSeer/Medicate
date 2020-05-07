@@ -3,7 +3,9 @@ Medicate
 
 A game interface add-on designed for the Medic class in Wildstar, a Sci-Fi MMORPG.
 
-http://wildstar.curseforge.com/ws-addons/220004-medicate
+https://www.curseforge.com/wildstar/ws-addons/medicate
+
+(Check out my other addon: https://www.curseforge.com/wildstar/ws-addons/bijiplates)
 
 http://www.wildstar-online.com
 
